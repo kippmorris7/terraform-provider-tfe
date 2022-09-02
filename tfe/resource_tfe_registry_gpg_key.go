@@ -24,7 +24,7 @@ func resourceTFERegistryGPGKey() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				// go-tfe and the HTTP API support updating the namespace, but because the namespace
-				// is part of what uniquely identifies a key, per the API structure and the tfe.GPGKeyID
+				// is part of what uniquely identifies a key, per the API structure and the GPGKeyID
 				// type from go-tfe, modifying the namespace must force a new resource in Terraform.
 				ForceNew: true,
 			},
