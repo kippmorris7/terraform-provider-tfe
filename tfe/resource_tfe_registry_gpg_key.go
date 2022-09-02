@@ -8,26 +8,28 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+// Since these are the only possible values (respectively) for these two attributes,
+// it doesn't make snese to expose them to users of the provider.
+var privateRegistryName = tfe.RegistryName("private")
+var gpgKeyType = "gpg-keys"
+
 func resourceTFERegistryGPGKey() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceTFERegistryGPGKeyCreate,
 		Read:   resourceTFERegistryGPGKeyRead,
-		Update: resourceTFERegistryGPGKeyUpdate,
 		Delete: resourceTFERegistryGPGKeyDelete,
 
 		Schema: map[string]*schema.Schema{
 			"provider_namespace": {
 				Type:     schema.TypeString,
 				Required: true,
-			},
-
-			"ascii_armor": {
-				Type:     schema.TypeString,
-				Required: true,
+				// go-tfe and the HTTP API support updating the namespace, but because the namespace
+				// is part of what uniquely identifies a key, per the API structure and the tfe.GPGKeyID
+				// type from go-tfe, modifying the namespace must force a new resource in Terraform.
 				ForceNew: true,
 			},
 
-			"type": {
+			"ascii_armor": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -46,7 +48,6 @@ func resourceTFERegistryGPGKeyCreate(d *schema.ResourceData, meta interface{}) e
 
 	providerNamespace := d.Get("provider_namespace").(string)
 	asciiArmor := d.Get("ascii_armor").(string)
-	gpgKeyType := d.Get("type").(string)
 
 	options := tfe.GPGKeyCreateOptions{
 		Type:       gpgKeyType,
@@ -54,10 +55,8 @@ func resourceTFERegistryGPGKeyCreate(d *schema.ResourceData, meta interface{}) e
 		AsciiArmor: asciiArmor,
 	}
 
-	registryName := tfe.RegistryName("private")
-
 	log.Printf("[DEBUG] Create new GPG key for namespace/organization %s", providerNamespace)
-	gpgKey, err := tfeClient.GPGKeys.Create(ctx, registryName, options)
+	gpgKey, err := tfeClient.GPGKeys.Create(ctx, privateRegistryName, options)
 
 	if err != nil {
 		return fmt.Errorf(
@@ -76,7 +75,7 @@ func resourceTFERegistryGPGKeyRead(d *schema.ResourceData, meta interface{}) err
 	tfeClient := meta.(*tfe.Client)
 
 	gpgKeyID := tfe.GPGKeyID{
-		RegistryName: tfe.RegistryName("private"),
+		RegistryName: privateRegistryName,
 		Namespace:    d.Get("provider_namespace").(string),
 		KeyID:        d.Get("key_id").(string),
 	}
@@ -96,34 +95,9 @@ func resourceTFERegistryGPGKeyRead(d *schema.ResourceData, meta interface{}) err
 
 	d.Set("provider_namespace", gpgKey.Namespace)
 	d.Set("ascii_armor", gpgKey.AsciiArmor)
-	d.Set("type", "gpg-keys") // This shouldn't be hard-coded, but I don't know what else to do because go-tfe doesn't return the type
 	d.Set("key_id", gpgKey.KeyID)
 
 	return nil
-}
-
-func resourceTFERegistryGPGKeyUpdate(d *schema.ResourceData, meta interface{}) error {
-	tfeClient := meta.(*tfe.Client)
-
-	gpgKeyID := tfe.GPGKeyID{
-		RegistryName: tfe.RegistryName("private"),
-		Namespace:    d.Get("provider_namespace").(string),
-		KeyID:        d.Get("key_id").(string),
-	}
-
-	options := tfe.GPGKeyUpdateOptions{
-		Type:      d.Get("type").(string),
-		Namespace: d.Get("provider_namespace").(string),
-	}
-
-	log.Printf("[DEBUG] Update GPG key: %s", d.Id())
-	_, err := tfeClient.GPGKeys.Update(ctx, gpgKeyID, options)
-
-	if err != nil {
-		return fmt.Errorf("Error updating GPG key %s: %w", d.Id(), err)
-	}
-
-	return resourceTFERegistryGPGKeyRead(d, meta)
 }
 
 func resourceTFERegistryGPGKeyDelete(d *schema.ResourceData, meta interface{}) error {
