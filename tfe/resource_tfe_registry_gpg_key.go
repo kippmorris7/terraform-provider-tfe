@@ -113,7 +113,7 @@ func resourceTFERegistryGPGKeyUpdate(d *schema.ResourceData, meta interface{}) e
 
 	options := tfe.GPGKeyUpdateOptions{
 		Type:      d.Get("type").(string),
-		Namespace: d.Get("namespace").(string),
+		Namespace: d.Get("provider_namespace").(string),
 	}
 
 	log.Printf("[DEBUG] Update GPG key: %s", d.Id())
