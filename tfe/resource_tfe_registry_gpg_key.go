@@ -9,7 +9,7 @@ import (
 )
 
 // Since these are the only possible values (respectively) for these two attributes,
-// it doesn't make snese to expose them to users of the provider.
+// it doesn't make sense to expose them to users of the provider.
 var privateRegistryName = tfe.RegistryName("private")
 var gpgKeyType = "gpg-keys"
 
