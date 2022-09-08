@@ -83,6 +83,7 @@ func Provider() *schema.Provider {
 			"tfe_oauth_client":            dataSourceTFEOAuthClient(),
 			"tfe_organization_membership": dataSourceTFEOrganizationMembership(),
 			"tfe_organization_run_task":   dataSourceTFEOrganizationRunTask(),
+			"tfe_registry_gpg_key":        dataSourceTFERegistryGPGKey(),
 			"tfe_slug":                    dataSourceTFESlug(),
 			"tfe_ssh_key":                 dataSourceTFESSHKey(),
 			"tfe_team":                    dataSourceTFETeam(),
